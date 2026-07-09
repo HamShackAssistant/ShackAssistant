@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Shack Assistant
 
 Linux ham shack startup and station-assistant utility.
@@ -15,3 +16,7 @@ Linux ham shack startup and station-assistant utility.
 ## Current Version
 
 v0.1 - Bash launcher
+=======
+# ShackAssistant
+An open-source intelligent amateur radio station assistant for Linux, with planned support for Windows.
+>>>>>>> 489629d2e8d84ed10aaac6f3f24fb937267243ac

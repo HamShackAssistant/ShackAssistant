@@ -19,6 +19,7 @@ This document describes the components present in the repository as of v0.1.
 │  GridTracker ──UDP──► watcher ──UDP──► CQRLOG          │
 │                         │                               │
 │                         ├── notify-send (desktop alert) │
+│                         ├── ntfy push (optional)        │
 │                         └── logs/station-watch.jsonl    │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -75,17 +76,62 @@ String fields use Qt QDataStream encoding (UTF-16-BE with length prefix).
 
 ### Watchlist matching
 
-- Loaded from a CSV file (default: `data/station-watch.csv`)
-- Columns: `callsign`, optional `label`
+Station Watch is event-agnostic: it has no contest- or event-specific callsigns in code. Operators supply their own watchlists as external CSV files.
+
+- Default active watchlist: `~/.local/share/shack-assistant/watchlist.csv` (operator-owned, not in the repository)
+- Tracked example format: `data/station-watch.example.csv` (generic fictional callsigns only)
+- Override path at runtime: `--watchlist PATH`
+- Columns: `callsign`, optional `label` (or `description`)
 - Comments (`#`) and header rows are skipped
 - Callsigns are normalized to uppercase
 - Matching tokenizes the decode message and checks for exact callsign matches
 - Per-callsign alert cooldown defaults to 900 seconds
+- Hot reload when the active CSV file is edited
+
+#### Operator workflow (current)
+
+Manual entry is CSV editing only. There is no UI or CLI for adding callsigns yet.
+
+1. Copy `data/station-watch.example.csv` to a user-owned path, or create a new CSV in the same format
+2. Edit rows to add or remove callsigns (single-call files are valid)
+3. Start the watcher with the default path or `--watchlist` for a contest- or event-specific file
+4. Swap watchlists by editing the active file or pointing `--watchlist` at another CSV
+
+Example for a one-off event file:
+
+```bash
+python3 modules/station_watch/watcher.py --watchlist ~/watchlists/my-event.csv
+```
+
+#### Ignored operator data
+
+These paths are not committed:
+
+- `data/station-watch.csv` (legacy/local active file location)
+- `data/watchlists/` (optional directory for event-specific lists)
+- `~/.local/share/shack-assistant/watchlist.csv` (default active watchlist)
 
 ### Outputs
 
-1. **Desktop notification** — `notify-send` with callsign, band, mode, SNR, and message
-2. **Spot log** — JSON lines appended to `logs/station-watch.jsonl`
+1. **Desktop notification** — `notify-send` with callsign (title), label, band, mode, SNR, dial frequency, UTC decode time, and WSJT-X message (fields omitted when unavailable)
+2. **ntfy push notification** — optional; enabled via `~/.config/shack-assistant/notifications.toml`
+3. **Spot log** — JSON lines appended to `logs/station-watch.jsonl`
+
+### Notification Architecture
+
+When a watchlist match passes cooldown checks:
+
+```
+Station Match
+    ├── Desktop Notification (notify-send)
+    └── ntfy Push Notification (optional)
+```
+
+- Desktop notifications always run via `notify-send`.
+- ntfy is loaded from `~/.config/shack-assistant/notifications.toml` at startup.
+- Example configuration: `config/notifications.example.toml` (tracked; copy and edit locally).
+- If the config file is missing, ntfy is disabled and Station Watch continues normally.
+- Network failures on ntfy are logged as warnings and do not stop the watcher.
 
 ### Band mapping
 
@@ -95,7 +141,12 @@ String fields use Qt QDataStream encoding (UTF-16-BE with length prefix).
 
 | File | Role |
 |------|------|
-| `data/station-watch.csv` | Callsign watchlist (untracked sample data) |
+| `data/station-watch.example.csv` | Tracked example watchlist format (generic callsigns only) |
+| `data/station-watch.csv` | Ignored operator watchlist (optional local path) |
+| `data/watchlists/` | Ignored directory for event-specific operator lists |
+| `~/.local/share/shack-assistant/watchlist.csv` | Default active watchlist (operator-owned, created locally) |
+| `~/.config/shack-assistant/notifications.toml` | Operator notification settings (not in repo) |
+| `config/notifications.example.toml` | Example ntfy configuration (tracked) |
 | `logs/station-watch.jsonl` | Spot log output (created at runtime by watcher; not in repo) |
 | `~/.shack-startup.log` | Launcher log (created at runtime; not in repo) |
 

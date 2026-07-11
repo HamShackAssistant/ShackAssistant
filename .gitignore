@@ -225,3 +225,8 @@ __pycache__/
 
 # Local configuration
 config/local.yaml
+config/notifications.toml
+
+# Operator watchlists (runtime data)
+data/station-watch.csv
+data/watchlists/

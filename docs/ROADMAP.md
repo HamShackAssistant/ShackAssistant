@@ -13,7 +13,7 @@ Items below are derived from repository contents and stated project goals. Nothi
 
 Source exists locally but is not committed or integrated:
 
-- [ ] Commit Station Watch module and sample watchlist
+- [ ] Commit Station Watch module and example watchlist (`data/station-watch.example.csv`)
 - [ ] Integrate Station Watch into shack startup (launcher or separate service)
 - [ ] Document GridTracker UDP forwarding configuration
 - [ ] Verify end-to-end flow: GridTracker → watcher → CQRLOG
@@ -21,7 +21,7 @@ Source exists locally but is not committed or integrated:
 ### Station Watch capabilities already implemented in source
 
 - WSJT-X UDP packet parsing (status and decode messages)
-- CSV watchlist with hot reload
+- CSV watchlist with hot reload (operator-owned external files; event-agnostic)
 - Desktop notifications via `notify-send`
 - Unchanged packet relay to CQRLOG
 - JSONL spot logging with cooldown per callsign
@@ -38,6 +38,7 @@ These are reasonable follow-ons based on gaps in the current repository. They ar
 
 - Packaging or install script for the launcher and watcher
 - Configuration file for app paths, UDP ports, and watchlist location
+- Manual watchlist entry UI or CLI (CSV editing is the current workflow)
 - systemd user service for Station Watch
 - Tests for WSJT-X packet parsing and watchlist matching
 - Remove hardcoded GridTracker path from the launcher

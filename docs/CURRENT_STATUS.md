@@ -63,21 +63,31 @@ The following files exist locally but are not committed:
 | `modules/station_watch/watcher.py` | UDP listener for WSJT-X decodes |
 | `modules/station_watch/__init__.py` | Package marker (empty) |
 | `modules/__init__.py` | Package marker (empty) |
-| `data/station-watch.csv` | Sample callsign watchlist |
+| `data/station-watch.example.csv` | Tracked example watchlist format |
 
 ### What Station Watch does (from source)
 
 - Listens on UDP `127.0.0.1:2238` for WSJT-X packets forwarded by GridTracker
 - Parses WSJT-X status and decode messages
-- Matches decoded message tokens against a CSV watchlist
+- Matches decoded message tokens against an operator-supplied CSV watchlist
 - Sends desktop notifications via `notify-send`
 - Relays original packets unchanged to UDP `127.0.0.1:2239` for CQRLOG
 - Appends spot records to `logs/station-watch.jsonl`
-- Reloads the watchlist automatically when the CSV file changes
+- Reloads the watchlist automatically when the active CSV file changes
+- Exits with a clear message if the active watchlist file does not exist
 
-### Sample watchlist entries
+### Watchlist model
 
-`data/station-watch.csv` contains three callsigns: WC5WC, W4C, VC3F.
+Station Watch is event-agnostic. No contest or event callsigns are stored in Python code.
+
+| Path | Status |
+|------|--------|
+| `data/station-watch.example.csv` | Tracked example only (generic fictional callsigns) |
+| `~/.local/share/shack-assistant/watchlist.csv` | Default active watchlist (operator-owned) |
+| `data/station-watch.csv` | Ignored operator file (optional) |
+| `data/watchlists/` | Ignored directory for per-event lists |
+
+Operators can use different CSV files for different contests or events via `--watchlist`. Manual callsign entry is CSV editing only; a dedicated UI or CLI is not implemented yet.
 
 ## Not Present in Repository
 
@@ -85,6 +95,7 @@ The following files exist locally but are not committed:
 - No automated tests
 - No systemd service or desktop entry for Station Watch
 - No integration of Station Watch into `start-shack.sh`
+- No manual watchlist entry UI or CLI (CSV editing only)
 - No Windows support
 
 ## Documentation

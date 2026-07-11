@@ -25,10 +25,21 @@ Shack Assistant is a Linux ham shack startup and station-assistant utility. The 
 ## Repository Layout
 
 ```
-scripts/start-shack.sh     # v0.1 Bash launcher (tracked)
-modules/station_watch/     # Station Watch module (untracked, in development)
-data/station-watch.csv     # Watchlist sample data (untracked, in development)
+scripts/start-shack.sh              # v0.1 Bash launcher (tracked)
+modules/station_watch/              # Station Watch module (untracked, in development)
+data/station-watch.example.csv      # Example watchlist format (tracked)
+data/station-watch.csv              # Operator watchlist (ignored)
+data/watchlists/                    # Per-event operator lists (ignored)
 ```
+
+## Watchlists
+
+Station Watch loads callsigns from external operator-owned CSV files. The repository ships only a generic example file (`data/station-watch.example.csv`). Do not commit operator watchlists or contest-specific lists.
+
+- Default active path: `~/.local/share/shack-assistant/watchlist.csv`
+- Override at runtime with `--watchlist PATH`
+- Manual entry today: edit the active CSV file
+- UI/CLI for manual entry: not implemented
 
 ## What Not to Change Without Approval
 

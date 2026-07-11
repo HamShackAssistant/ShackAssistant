@@ -1,0 +1,4 @@
+[ntfy]
+enabled = false
+server = "https://ntfy.sh"
+topic = "your-private-topic-here"

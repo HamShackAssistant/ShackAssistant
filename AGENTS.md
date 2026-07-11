@@ -36,6 +36,15 @@ data/station-watch.csv     # Watchlist sample data (untracked, in development)
 - UDP relay behavior in Station Watch (CQRLOG depends on unchanged packet relay)
 - Existing integrations: FLrig, WSJT-X, GridTracker, CQRLOG
 
+### CQRLOG
+
+When testing WSJT-X integration:
+
+- Verify live field population separately from automatic logging.
+- Enable **Remote Mode for ADIF logger** before testing automatic log insertion.
+- Do not assume the red "Offline" indicator indicates a failed integration;
+  verify actual functionality first.
+
 ## After Coding
 
 Report:

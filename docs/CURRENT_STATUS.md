@@ -18,6 +18,40 @@ Last updated from repository inspection: 2026-07-11.
 - Audio detection looks for device names matching `USB.*Audio`, `CODEC`, or `Burr`
 - Applications are started with `nohup` and verified via `pgrep`
 
+## CQRLOG / WSJT-X Integration Notes
+
+### Current Status
+
+The following integration has been verified:
+
+- FLrig controls the radio correctly.
+- WSJT-X communicates with FLrig.
+- GridTracker communicates with WSJT-X.
+- CQRLOG receives live WSJT-X data (callsign, frequency, mode, DXCC, etc.).
+
+### Automatic QSO Logging
+
+Automatic logging from WSJT-X to CQRLOG requires CQRLOG to be placed into
+**Remote Mode for ADIF logger**.
+
+When this mode is enabled:
+
+- Logging a completed QSO in WSJT-X automatically inserts the QSO into CQRLOG.
+- Live WSJT-X fields continue to populate normally.
+
+### Notes
+
+The red **Offline** indicator in the CQRLOG New QSO window may remain displayed
+even while live WSJT-X information is being received. Based on current testing,
+this indicator alone should not be used to determine whether the WSJT-X
+integration is functioning.
+
+Future work:
+
+- Verify the exact conditions that change the Offline indicator.
+- Determine whether the indicator reflects WSJT-X heartbeat status,
+  ADIF remote mode, or another internal CQRLOG state.
+
 ## In Development — Station Watch
 
 **Status:** Untracked; not part of any release.

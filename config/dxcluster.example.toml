@@ -1,0 +1,7 @@
+[dxcluster]
+enabled = false
+host = "cluster.example.com"
+port = 7300
+callsign = "CALLSIGN"
+reconnect_delay_seconds = 30
+alert_cooldown_seconds = 900

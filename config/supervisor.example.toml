@@ -1,0 +1,11 @@
+[supervisor]
+restart_failed_sources = true
+restart_delay_seconds = 10
+shutdown_timeout_seconds = 10
+status_interval_seconds = 5
+
+[sources.wsjtx]
+enabled = true
+
+[sources.dxcluster]
+enabled = true

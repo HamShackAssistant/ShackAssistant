@@ -17,6 +17,8 @@ Authoritative baseline for the Shack Assistant station environment. This documen
 - [Verified Integration Chain](#verified-integration-chain)
 - [CQRLOG and WSJT-X Integration](#cqrlog-and-wsjt-x-integration)
 - [Station Watch](#station-watch)
+- [DX Cluster Watch](#dx-cluster-watch)
+- [Shack Assistant Supervisor](#shack-assistant-supervisor)
 - [Operator Data Paths](#operator-data-paths)
 - [Logging](#logging)
 - [Future Verified Configuration Placeholders](#future-verified-configuration-placeholders)
@@ -239,6 +241,73 @@ Station Match
 
 ---
 
+## DX Cluster Watch
+
+**Status:** Field validated (VC3F live detection with desktop and ntfy, 2026-07-12).
+
+DX Cluster Watch connects directly to a configured DXSpider-compatible cluster node over TCP. No additional GUI application is required. It uses the same watchlist and notification settings as Station Watch.
+
+### Configuration
+
+Operator config:
+
+```text
+~/.config/shack-assistant/dxcluster.toml
+```
+
+Live operation requires:
+
+```toml
+[dxcluster]
+enabled = true
+```
+
+Notification settings remain in `~/.config/shack-assistant/notifications.toml`.
+
+### Start Command
+
+```bash
+python3 -m modules.station_watch.dxcluster_watcher
+```
+
+Dry-run (no notifications):
+
+```bash
+python3 -m modules.station_watch.dxcluster_watcher --dry-run --verbose
+```
+
+Not integrated into `scripts/start-shack.sh`. May be started via Shack Assistant Supervisor.
+
+---
+
+## Shack Assistant Supervisor
+
+**Status:** Implemented; not field validated.
+
+The supervisor runs WSJT-X Station Watch and DX Cluster Watch as child subprocesses from one terminal. Child watchers remain independently launchable for troubleshooting.
+
+### Configuration
+
+```text
+~/.config/shack-assistant/supervisor.toml
+```
+
+Example template: `config/supervisor.example.toml`
+
+### Start Command
+
+```bash
+PYTHONPATH=. python3 -m modules.supervisor
+```
+
+Do not run standalone watchers alongside the supervisor.
+
+Mark field validated only after both sources run simultaneously under the supervisor and at least one real alert is received.
+
+Not integrated into `scripts/start-shack.sh`.
+
+---
+
 ## Operator Data Paths
 
 These paths are operator-owned and must not be committed to the repository:
@@ -247,6 +316,9 @@ These paths are operator-owned and must not be committed to the repository:
 |------|---------|
 | `~/.local/share/shack-assistant/watchlist.csv` | Active Station Watch watchlist |
 | `~/.config/shack-assistant/notifications.toml` | Notification settings |
+| `~/.config/shack-assistant/dxcluster.toml` | DX Cluster settings |
+| `~/.config/shack-assistant/supervisor.toml` | Supervisor settings |
+| `~/.local/state/shack-assistant/supervisor.pid` | Supervisor PID lock (runtime) |
 | `data/station-watch.csv` | Optional local watchlist (ignored by git) |
 | `data/watchlists/` | Optional per-event watchlist directory (ignored by git) |
 
@@ -289,6 +361,16 @@ _To be added after verification._
 
 _To be added after verification._
 
+### DX Cluster Field Validation
+
+On 2026-07-12, DX Cluster Watch detected watched station **VC3F** during live operation, delivered desktop and ntfy notifications, and the operator completed a successful QSO.
+
+### Shack Assistant Supervisor Field Validation
+
+<!-- Placeholder: document first successful simultaneous operation under supervisor with real alert. -->
+
+_To be added after verification._
+
 ---
 
 ## Revision History
@@ -297,3 +379,6 @@ _To be added after verification._
 |------|----------|---------|-------------|
 | 2026-07-12 | 1.0 | Initial known-good baseline: v0.1 launcher, application stack, pre-flight checks, verified FLrig/WSJT-X/GridTracker/CQRLOG integration, CQRLOG ADIF remote-mode notes, Station Watch in-development defaults | Station testing |
 | 2026-07-12 | 1.1 | Updated to v0.3.0; added Validation Status and Project Milestones; documented VB7F live FT8 detection and successful QSO; marked Station Watch, desktop notifications, and ntfy as verified | Station testing |
+| 2026-07-12 | 1.2 | Added DX Cluster Watch configuration and launch notes (implemented, not field validated) | Development |
+| 2026-07-12 | 1.3 | DX Cluster dry-run validated VC3F; live notification integration documented | Station testing |
+| 2026-07-12 | 1.4 | DX Cluster field validated VC3F with desktop and ntfy; Shack Assistant Supervisor added (not field validated) | Station testing |

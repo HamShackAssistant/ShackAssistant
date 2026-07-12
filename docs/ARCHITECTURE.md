@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the components present in the repository as of v0.1.
+This document describes the components present in the Shack Assistant repository.
 
 ## Overview
 
@@ -13,15 +13,20 @@ This document describes the components present in the repository as of v0.1.
 └─────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────┐
-│           modules/station_watch/watcher.py              │
-│         (in development — untracked, not released)      │
+│              modules/supervisor.py                      │
+│         (orchestration — not field validated)           │
 │                                                         │
-│  GridTracker ──UDP──► watcher ──UDP──► CQRLOG          │
-│                         │                               │
-│                         ├── notify-send (desktop alert) │
-│                         ├── ntfy push (optional)        │
-│                         └── logs/station-watch.jsonl    │
+│  +-- WSJT-X Station Watch (subprocess)                  │
+│  +-- DX Cluster Watch (subprocess)                      │
 └─────────────────────────────────────────────────────────┘
+
+WSJT-X UDP ───────┐
+                  ├── Watchlist Matcher ── Notification Pipeline
+DX Cluster TCP ───┘
+                  │
+                  ├── notify-send (desktop alert)
+                  ├── ntfy push (optional)
+                  └── logs/station-watch.jsonl (WSJT-X only)
 ```
 
 ## v0.1 Bash Launcher
@@ -47,11 +52,11 @@ This document describes the components present in the repository as of v0.1.
 - Already-running apps are detected and skipped
 - Failures are reported to both console and log file
 
-## Station Watch (In Development)
+## Station Watch (WSJT-X — Field Validated)
 
 **File:** `modules/station_watch/watcher.py`
 
-Station Watch sits in the UDP path between GridTracker and CQRLOG. It is designed to observe WSJT-X protocol traffic without modifying it.
+Station Watch sits in the UDP path between GridTracker and CQRLOG. It is designed to observe WSJT-X protocol traffic without modifying it. This source is field validated as part of v0.3.0.
 
 ### UDP topology
 
@@ -137,6 +142,117 @@ Station Match
 
 `frequency_to_band()` maps the last known status frequency to common amateur bands (160m through 2m) or reports MHz if unmatched.
 
+## DX Cluster Watch (Implemented — Not Field Validated)
+
+**File:** `modules/station_watch/dxcluster_watcher.py`
+
+DX Cluster Watch is a lightweight TCP client that connects directly to a configured DXSpider-compatible cluster node. No additional GUI application is required.
+
+### Role in the architecture
+
+- Runs independently of WSJT-X Station Watch
+- Uses the same active watchlist: `~/.local/share/shack-assistant/watchlist.csv`
+- Reuses the shared notification pipeline (`NotificationDispatcher.notify_alert`)
+- Is optional and disabled unless configured and explicitly launched
+- Fails safely without affecting the WSJT-X watcher
+
+### Configuration
+
+Operator config: `~/.config/shack-assistant/dxcluster.toml`
+
+Example template: `config/dxcluster.example.toml`
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `enabled` | `false` | Must be `true` for live operation |
+| `host` | `""` | Cluster node hostname |
+| `port` | `7300` | Cluster node TCP port |
+| `callsign` | `""` | Login callsign |
+| `reconnect_delay_seconds` | `30` | Delay before reconnect |
+| `alert_cooldown_seconds` | `900` | Per callsign+band cooldown |
+
+### Network client
+
+- Uses `asyncio.open_connection(host, port)`
+- Filters common Telnet negotiation bytes from the text stream
+- Detects login prompts and submits the configured callsign
+- Reconnects after disconnect using the configured delay
+
+### Spot parsing
+
+**File:** `modules/station_watch/dx_spot_parser.py`
+
+Parses DXSpider-style spot lines and produces a structured `DxSpot` object with spotter, frequency, callsign, comment, UTC time, band, and conservative mode inference.
+
+### Resource profile
+
+- Single asyncio TCP connection
+- Bounded read buffers (4 KB per read)
+- No unbounded spot history
+- No database
+- Suitable for continuous background use on an 8 GB RAM shack PC
+
+## Shack Assistant Supervisor (Implemented — Not Field Validated)
+
+**Files:** `modules/supervisor.py`, `modules/supervisor_config.py`
+
+The supervisor is a thin orchestration layer that launches the existing WSJT-X and DX Cluster watchers as independent child processes. It does not merge their implementations or share an event loop.
+
+### Process model
+
+```
+Shack Assistant Supervisor
+        |
+        +-- WSJT-X Station Watch (subprocess: watcher.py)
+        |
+        +-- DX Cluster Watch (subprocess: -m dxcluster_watcher)
+```
+
+Child commands use `sys.executable` with `PYTHONPATH` set to the repository root.
+
+### Responsibilities
+
+| Supervisor | Child watchers |
+|------------|----------------|
+| Start enabled sources | Source-specific network I/O |
+| Prefix child stdout/stderr | Watchlist matching |
+| Monitor process health | Notification delivery |
+| Restart after unexpected exit | Cooldowns and parsing |
+| Graceful shutdown | Reconnect logic (DX Cluster) |
+
+### Configuration
+
+Operator config: `~/.config/shack-assistant/supervisor.toml`
+
+Example template: `config/supervisor.example.toml`
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `restart_failed_sources` | `true` | Restart children after unexpected exit |
+| `restart_delay_seconds` | `10` | Minimum delay before restart |
+| `shutdown_timeout_seconds` | `10` | Wait before force-kill on shutdown |
+| `sources.wsjtx.enabled` | `true` | Start WSJT-X watcher |
+| `sources.dxcluster.enabled` | `true` | Start DX Cluster watcher (also requires `dxcluster.toml` enabled) |
+
+The supervisor does not duplicate watchlist, ntfy, or DX Cluster connection settings.
+
+### Duplicate protection
+
+PID file: `~/.local/state/shack-assistant/supervisor.pid`
+
+A second supervisor instance refuses to start when a valid PID is active. Stale PID files are recovered safely.
+
+### Resource profile
+
+- Two child Python processes (same as running watchers independently)
+- Line-prefix reader threads with bounded buffering
+- No GUI, database, or busy polling
+- Suitable for 8 GB RAM shack PC
+
+### Independent operation
+
+Both watchers remain launchable for troubleshooting. Do not run standalone watchers alongside the supervisor.
+
 ## Data Files
 
 | File | Role |
@@ -147,6 +263,11 @@ Station Match
 | `~/.local/share/shack-assistant/watchlist.csv` | Default active watchlist (operator-owned, created locally) |
 | `~/.config/shack-assistant/notifications.toml` | Operator notification settings (not in repo) |
 | `config/notifications.example.toml` | Example ntfy configuration (tracked) |
+| `~/.config/shack-assistant/dxcluster.toml` | Operator DX Cluster settings (not in repo) |
+| `config/dxcluster.example.toml` | Example DX Cluster configuration (tracked) |
+| `~/.config/shack-assistant/supervisor.toml` | Operator supervisor settings (not in repo) |
+| `config/supervisor.example.toml` | Example supervisor configuration (tracked) |
+| `~/.local/state/shack-assistant/supervisor.pid` | Supervisor PID lock (runtime) |
 | `logs/station-watch.jsonl` | Spot log output (created at runtime by watcher; not in repo) |
 | `~/.shack-startup.log` | Launcher log (created at runtime; not in repo) |
 
@@ -163,3 +284,14 @@ Station Match
 
 - Python 3 (stdlib only — no third-party packages in source)
 - `notify-send` (libnotify; for desktop alerts)
+
+### DX Cluster Watch
+
+- Python 3 `asyncio` (stdlib)
+- Network access to configured cluster host/port
+- `notify-send` and optional ntfy (shared notification config)
+
+### Shack Assistant Supervisor
+
+- Python 3 subprocess and threading (stdlib)
+- No additional dependencies beyond child watcher requirements

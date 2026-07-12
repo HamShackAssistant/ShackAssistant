@@ -89,12 +89,69 @@ Station Watch is event-agnostic. No contest or event callsigns are stored in Pyt
 
 Operators can use different CSV files for different contests or events via `--watchlist`. Manual callsign entry is CSV editing only; a dedicated UI or CLI is not implemented yet.
 
+## DX Cluster Watch
+
+**Status:** Field validated (VC3F live detection with desktop and ntfy, 2026-07-12).
+
+| File | Purpose |
+|------|---------|
+| `modules/station_watch/dxcluster_watcher.py` | TCP client and alert pipeline |
+| `modules/station_watch/dx_spot_parser.py` | DXSpider-style spot parser |
+| `modules/station_watch/dxcluster_config.py` | Configuration loader |
+| `config/dxcluster.example.toml` | Example cluster configuration |
+
+### What DX Cluster Watch does
+
+- Connects to a configured DXSpider-compatible cluster node over TCP
+- Parses live DX spot lines with explicit or high-confidence FT8/FT4 mode inference
+- Matches spotted callsigns against the same operator watchlist as Station Watch
+- Sends desktop and optional ntfy notifications in live mode via `NotificationDispatcher`
+- Uses quiet operator-focused terminal output; parser diagnostics require `--verbose`
+- Reconnects after disconnect using a configurable delay
+- Runs independently of the WSJT-X watcher
+
+### Launch
+
+```bash
+python3 -m modules.station_watch.dxcluster_watcher
+```
+
+Live mode requires `enabled = true` in `~/.config/shack-assistant/dxcluster.toml`.
+
+## Shack Assistant Supervisor
+
+**Status:** Implemented; not field validated.
+
+| File | Purpose |
+|------|---------|
+| `modules/supervisor.py` | Subprocess orchestration and operator console |
+| `modules/supervisor_config.py` | Supervisor configuration loader |
+| `config/supervisor.example.toml` | Example supervisor configuration |
+
+### What the supervisor does
+
+- Starts WSJT-X Station Watch and DX Cluster Watch as child processes
+- Prefixes child output (`[WSJT-X]`, `[DX Cluster]`, `[Supervisor]`)
+- Restarts failed sources after a configurable delay
+- Graceful shutdown on `Ctrl+C` / `SIGTERM`
+- PID lock at `~/.local/state/shack-assistant/supervisor.pid`
+
+### Launch
+
+```bash
+PYTHONPATH=. python3 -m modules.supervisor
+```
+
+Not integrated into `scripts/start-shack.sh`. Do not run standalone watchers alongside the supervisor.
+
+Mark the supervisor field validated only after both sources run simultaneously under it and at least one real alert is received.
+
 ## Not Present in Repository
 
 - No `requirements.txt`, `pyproject.toml`, or package installer
-- No automated tests
-- No systemd service or desktop entry for Station Watch
-- No integration of Station Watch into `start-shack.sh`
+- No systemd service or desktop entry for Station Watch or supervisor
+- No integration of supervisor into `start-shack.sh` (documented one-line change only)
+- Supervisor field validation
 - No manual watchlist entry UI or CLI (CSV editing only)
 - No Windows support
 

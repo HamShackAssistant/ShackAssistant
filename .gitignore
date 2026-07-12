@@ -226,6 +226,8 @@ __pycache__/
 # Local configuration
 config/local.yaml
 config/notifications.toml
+config/dxcluster.toml
+config/supervisor.toml
 
 # Operator watchlists (runtime data)
 data/station-watch.csv

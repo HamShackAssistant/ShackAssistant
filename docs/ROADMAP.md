@@ -2,29 +2,38 @@
 
 Items below are derived from repository contents and stated project goals. Nothing here is committed work unless noted.
 
-## Done — v0.1
+## Done — v0.3.0
 
 - [x] Bash launcher with pre-flight checks (`scripts/start-shack.sh`)
 - [x] USB audio and CAT serial detection
 - [x] Startup of FLrig, WSJT-X, GridTracker, CQRLOG
-- [x] Startup logging to `~/.shack-startup.log`
+- [x] Station Watch (WSJT-X) with CSV watchlist
+- [x] Desktop and ntfy notifications
+- [x] Field validation: VB7F live FT8 detection
 
-## In Progress — Station Watch (untracked)
+## In Progress — Shack Assistant Supervisor
 
-Source exists locally but is not committed or integrated:
+Implemented but not field validated:
 
-- [ ] Commit Station Watch module and example watchlist (`data/station-watch.example.csv`)
-- [ ] Integrate Station Watch into shack startup (launcher or separate service)
-- [ ] Document GridTracker UDP forwarding configuration
-- [ ] Verify end-to-end flow: GridTracker → watcher → CQRLOG
+- [x] Subprocess orchestration for WSJT-X and DX Cluster watchers
+- [x] Source enable/disable configuration
+- [x] Child output prefixing (`[WSJT-X]`, `[DX Cluster]`, `[Supervisor]`)
+- [x] Restart protection and graceful shutdown
+- [x] PID lock for duplicate-instance prevention
+- [x] Unit tests
+- [ ] Field validation: both sources running simultaneously with real alert received
+- [ ] Integrate into `scripts/start-shack.sh` (documented; not applied)
 
-### Station Watch capabilities already implemented in source
+## Done — DX Cluster Watch
 
-- WSJT-X UDP packet parsing (status and decode messages)
-- CSV watchlist with hot reload (operator-owned external files; event-agnostic)
-- Desktop notifications via `notify-send`
-- Unchanged packet relay to CQRLOG
-- JSONL spot logging with cooldown per callsign
+- [x] TCP cluster client with asyncio
+- [x] DXSpider-style spot parser
+- [x] Shared watchlist and notification pipeline
+- [x] Dry-run mode
+- [x] Unit tests
+- [x] Field validation: VC3F live detection with desktop and ntfy (2026-07-12)
+
+## Earlier — v0.1
 
 ## Planned — From Project Description
 

@@ -9,8 +9,22 @@ Shack Assistant runs on Linux. This guide covers the launcher, WSJT-X Station Wa
 - PulseAudio (`pactl`) for launcher audio checks (optional)
 - Installed shack applications: FLrig, WSJT-X, GridTracker, CQRLOG
 - `notify-send` (libnotify) for desktop notifications
+- `wmctrl` and `xdotool` for automatic CQRLOG Remote Mode for WSJT-X (optional)
 
 GridTracker is expected at `/opt/GridTracker2/gridtracker2`.
+
+### Install Linux packages
+
+On Debian/Ubuntu:
+
+```bash
+sudo apt install wmctrl xdotool libnotify-bin
+```
+
+- `wmctrl` and `xdotool` — enable automatic CQRLOG Remote Mode (`Ctrl+J`) at startup
+- `libnotify-bin` — provides `notify-send` for desktop alerts
+
+If `wmctrl` or `xdotool` are missing, shack startup continues normally. Enable CQRLOG Remote Mode for WSJT-X manually with **Ctrl+J** in the CQRLOG main window.
 
 ## Launcher
 

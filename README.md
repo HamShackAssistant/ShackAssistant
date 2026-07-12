@@ -12,6 +12,7 @@ An open-source intelligent amateur radio station assistant for Linux, with plann
 
 - Starts FLrig, WSJT-X, GridTracker, and CQRLOG
 - Checks USB audio and USB/CAT serial devices
+- Automatically enables CQRLOG Remote Mode for WSJT-X when `wmctrl` and `xdotool` are installed
 - Logs startup status
 
 ### Station Watch (WSJT-X — field validated)
@@ -46,6 +47,23 @@ The startup menu offers:
 3. **Exit**
 
 Use station hunting only when monitoring specific watchlist stations. For ordinary QSOs, choose normal operation.
+
+### CQRLOG Remote Mode automation
+
+Automatic CQRLOG Remote Mode for WSJT-X requires:
+
+```bash
+wmctrl
+xdotool
+```
+
+Install on Debian/Ubuntu:
+
+```bash
+sudo apt install wmctrl xdotool
+```
+
+Without these tools, startup continues normally but you must press **Ctrl+J** manually in the CQRLOG main window.
 
 Launcher icon: `icons/shack-assistant.png` (branding source: `icons/Shack-Assistant.png`).
 

@@ -1,52 +1,67 @@
 # Operating Guide
 
-## Startup Choices
+## Startup Menu
 
-Shack Assistant provides two startup paths. Use normal startup for ordinary operating sessions. Use monitored startup only when you want WSJT-X and DX Cluster watchlist alerts.
-
-### Start Shack (normal)
-
-Launches FLrig, WSJT-X, GridTracker, and CQRLOG. Does **not** start the supervisor or any watchers.
+Launch Shack Assistant with a single entry point:
 
 ```bash
 ./scripts/start-shack.sh
 ```
 
-Terminal output includes:
+The startup screen presents an operating mode menu:
 
 ```text
-Shack applications started.
-Station monitoring: Disabled
+==================================================
+Shack Assistant Startup
+==================================================
+
+Select Operating Mode
+
+1. Normal Operation
+   Launch radio applications only
+
+2. Station Hunting
+   Launch radio applications
+   Start Shack Assistant Supervisor
+   (which launches enabled watcher sources)
+
+3. Exit
+
+Selection [1]:
 ```
 
-### Start Shack + Watch (monitored)
+Press **Enter** to accept the default (option 1).
 
-Runs the same normal shack startup, then launches the Shack Assistant supervisor in the same terminal. The supervisor starts whichever watcher sources are enabled in supervisor configuration.
+### Option 1 — Normal Operation
 
-```bash
-./scripts/start-shack-watch.sh
-```
+- Launches FLrig, WSJT-X, GridTracker, and CQRLOG
+- Does **not** start the supervisor or any watchers
+- Displays `Station monitoring : Disabled`
 
-Terminal output includes:
+Use this for ordinary operating sessions when you are not hunting specific watchlist stations.
 
-```text
-Shack applications started.
-Station monitoring: Enabled
-Starting Shack Assistant supervisor...
-```
+### Option 2 — Station Hunting
+
+- Launches the same radio applications with the same timing and sequencing
+- Displays `Station monitoring : Enabled`
+- Starts `PYTHONPATH=. python3 -m modules.supervisor` in the same terminal
+- The supervisor launches whichever watcher sources are enabled in supervisor configuration
 
 The supervisor uses its PID lock at `~/.local/state/shack-assistant/supervisor.pid` to refuse duplicate instances.
 
+### Option 3 — Exit
+
+Exits cleanly without launching applications or the supervisor.
+
 ### Desktop launchers
 
-If you use desktop entries, point them at these commands:
+Point a single desktop entry at:
 
-| Launcher | Command |
-|----------|---------|
-| Start Shack | `./scripts/start-shack.sh` |
-| Start Shack + Watch | `./scripts/start-shack-watch.sh` |
+```bash
+./scripts/start-shack.sh
+```
 
-Use the same icon for both unless you prefer a distinct watch icon.
+The operator selects the operating mode at startup. Additional modes (Contest, POTA, Development) may be added to this menu in future releases.
 
 ### Troubleshooting: independent watchers
 

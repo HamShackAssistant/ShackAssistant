@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 APP_NAME="Shack Assistant"
 LOGFILE="$HOME/.shack-startup.log"
-
-clear
-echo "================================="
-echo "        SHACK ASSISTANT"
-echo "================================="
-echo
-echo "Starting shack environment..."
-echo "Log: $LOGFILE"
-echo
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 log() {
   echo "$(date '+%F %T') - $*" >> "$LOGFILE"
@@ -91,6 +86,64 @@ check_cat_usb() {
   fi
 }
 
+show_operating_mode_menu() {
+  clear
+  echo "=================================================="
+  echo "Shack Assistant Startup"
+  echo "=================================================="
+  echo
+  echo "Select Operating Mode"
+  echo
+  echo "1. Normal Operation"
+  echo "   Launch radio applications only"
+  echo
+  echo "2. Station Hunting"
+  echo "   Launch radio applications"
+  echo "   Start Shack Assistant Supervisor"
+  echo "   (which launches enabled watcher sources)"
+  echo
+  echo "3. Exit"
+  echo
+}
+
+read_operating_mode() {
+  local selection=""
+
+  read -r -p "Selection [1]: " selection
+  selection="${selection:-1}"
+
+  case "$selection" in
+    1)
+      echo "normal"
+      ;;
+    2)
+      echo "hunting"
+      ;;
+    3)
+      echo "exit"
+      ;;
+    *)
+      echo "normal"
+      ;;
+  esac
+}
+
+show_operating_mode_menu
+OPERATING_MODE="$(read_operating_mode)"
+
+if [[ "$OPERATING_MODE" == "exit" ]]; then
+  exit 0
+fi
+
+clear
+echo "================================="
+echo "        SHACK ASSISTANT"
+echo "================================="
+echo
+echo "Starting shack environment..."
+echo "Log: $LOGFILE"
+echo
+
 echo "================================="
 echo " Pre-flight checks"
 echo "================================="
@@ -115,10 +168,10 @@ echo "================================="
 echo
 echo "Shack applications started."
 
-if [[ "${SHACK_MONITORING:-0}" == "1" ]]; then
-  echo "Station monitoring: Enabled"
+if [[ "$OPERATING_MODE" == "hunting" ]]; then
+  echo "Station monitoring : Enabled"
 else
-  echo "Station monitoring: Disabled"
+  echo "Station monitoring : Disabled"
 fi
 
 echo
@@ -126,6 +179,12 @@ echo "Welcome back, BellDog."
 echo "73 de Goose"
 echo
 
-if [[ "${SHACK_MONITORING:-0}" != "1" ]]; then
-  read -p "Press Enter to close this window..."
+if [[ "$OPERATING_MODE" == "hunting" ]]; then
+  echo "Starting Shack Assistant supervisor..."
+  echo
+  cd "$PROJECT_ROOT"
+  export PYTHONPATH=.
+  exec python3 -m modules.supervisor
 fi
+
+read -p "Press Enter to close this window..."

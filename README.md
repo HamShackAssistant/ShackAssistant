@@ -35,19 +35,17 @@ An open-source intelligent amateur radio station assistant for Linux, with plann
 
 ## Quick Start
 
-**Normal shack startup** (radio apps only — no station monitoring):
-
 ```bash
 ./scripts/start-shack.sh
 ```
 
-**Shack startup with monitoring** (radio apps + supervisor):
+The startup menu offers:
 
-```bash
-./scripts/start-shack-watch.sh
-```
+1. **Normal Operation** — radio applications only (default)
+2. **Station Hunting** — radio applications plus Shack Assistant supervisor
+3. **Exit**
 
-Use monitoring only when hunting specific watchlist stations. For ordinary QSOs, use normal startup.
+Use station hunting only when monitoring specific watchlist stations. For ordinary QSOs, choose normal operation.
 
 Troubleshooting (run watchers independently — do not run alongside the supervisor):
 

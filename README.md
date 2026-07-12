@@ -47,6 +47,8 @@ The startup menu offers:
 
 Use station hunting only when monitoring specific watchlist stations. For ordinary QSOs, choose normal operation.
 
+Launcher icon: `icons/shack-assistant.png` (branding source: `icons/Shack-Assistant.png`).
+
 Troubleshooting (run watchers independently — do not run alongside the supervisor):
 
 ```bash

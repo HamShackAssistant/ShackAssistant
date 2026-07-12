@@ -55,11 +55,26 @@ Exits cleanly without launching applications or the supervisor.
 
 ### Desktop launchers
 
+Launcher artwork is stored in the repository at:
+
+| File | Purpose |
+|------|---------|
+| `icons/shack-assistant.png` | Official desktop launcher icon |
+| `icons/Shack-Assistant.png` | Larger branding artwork (1024×1024 source) |
+
 Point a single desktop entry at:
 
 ```bash
 ./scripts/start-shack.sh
 ```
+
+Example `Icon` entry:
+
+```text
+Icon=/home/lbell/Projects/ShackAssistant/icons/shack-assistant.png
+```
+
+The operator's desktop entry at `~/.local/share/applications/shack-assistant.desktop` is a **local user file** (not version-controlled). Update it when the icon path or startup script changes.
 
 The operator selects the operating mode at startup. Additional modes (Contest, POTA, Development) may be added to this menu in future releases.
 

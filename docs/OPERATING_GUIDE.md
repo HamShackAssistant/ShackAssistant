@@ -1,20 +1,52 @@
 # Operating Guide
 
-## Startup Order
+## Startup Choices
 
-1. Start the shack application stack:
+Shack Assistant provides two startup paths. Use normal startup for ordinary operating sessions. Use monitored startup only when you want WSJT-X and DX Cluster watchlist alerts.
 
-   ```bash
-   ./scripts/start-shack.sh
-   ```
+### Start Shack (normal)
 
-2. Start Shack Assistant Supervisor (recommended):
+Launches FLrig, WSJT-X, GridTracker, and CQRLOG. Does **not** start the supervisor or any watchers.
 
-   ```bash
-   PYTHONPATH=. python3 -m modules.supervisor
-   ```
+```bash
+./scripts/start-shack.sh
+```
 
-The supervisor starts enabled watcher processes in subprocesses, prefixes their output (`[WSJT-X]`, `[DX Cluster]`), and keeps both sources running from one terminal.
+Terminal output includes:
+
+```text
+Shack applications started.
+Station monitoring: Disabled
+```
+
+### Start Shack + Watch (monitored)
+
+Runs the same normal shack startup, then launches the Shack Assistant supervisor in the same terminal. The supervisor starts whichever watcher sources are enabled in supervisor configuration.
+
+```bash
+./scripts/start-shack-watch.sh
+```
+
+Terminal output includes:
+
+```text
+Shack applications started.
+Station monitoring: Enabled
+Starting Shack Assistant supervisor...
+```
+
+The supervisor uses its PID lock at `~/.local/state/shack-assistant/supervisor.pid` to refuse duplicate instances.
+
+### Desktop launchers
+
+If you use desktop entries, point them at these commands:
+
+| Launcher | Command |
+|----------|---------|
+| Start Shack | `./scripts/start-shack.sh` |
+| Start Shack + Watch | `./scripts/start-shack-watch.sh` |
+
+Use the same icon for both unless you prefer a distinct watch icon.
 
 ### Troubleshooting: independent watchers
 
@@ -24,16 +56,6 @@ Run these only when diagnosing a single source. **Do not** run standalone watche
 python3 modules/station_watch/watcher.py
 python3 -m modules.station_watch.dxcluster_watcher
 ```
-
-### Integrating with `start-shack.sh`
-
-The launcher does not yet start the supervisor automatically. After field validation, add this line after the application startup block (review before applying):
-
-```bash
-start_app "Shack Assistant Supervisor" "cd $(dirname "$0")/.. && PYTHONPATH=. python3 -m modules.supervisor" 2
-```
-
-Note: backgrounding the supervisor with `nohup` hides prefixed child output. Prefer a dedicated terminal for normal supervised operation.
 
 ## Shack Assistant Supervisor
 

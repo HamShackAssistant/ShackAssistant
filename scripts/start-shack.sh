@@ -113,8 +113,19 @@ echo "================================="
 echo " Shack startup complete"
 echo "================================="
 echo
+echo "Shack applications started."
+
+if [[ "${SHACK_MONITORING:-0}" == "1" ]]; then
+  echo "Station monitoring: Enabled"
+else
+  echo "Station monitoring: Disabled"
+fi
+
+echo
 echo "Welcome back, BellDog."
 echo "73 de Goose"
 echo
 
-read -p "Press Enter to close this window..."
+if [[ "${SHACK_MONITORING:-0}" != "1" ]]; then
+  read -p "Press Enter to close this window..."
+fi

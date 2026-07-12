@@ -30,15 +30,16 @@ start_app() {
   local name="$1"
   local cmd="$2"
   local wait_time="$3"
+  local pgrep_flag="${4:--f}"
 
-  if pgrep -f "$cmd" >/dev/null 2>&1; then
+  if pgrep "$pgrep_flag" "$cmd" >/dev/null 2>&1; then
     ok "$name already running"
   else
     echo -n "Starting $name..."
     nohup bash -c "$cmd" >/dev/null 2>&1 &
     sleep "$wait_time"
 
-    if pgrep -f "$cmd" >/dev/null 2>&1; then
+    if pgrep "$pgrep_flag" "$cmd" >/dev/null 2>&1; then
       echo " OK"
       log "Started $name"
     else
@@ -84,6 +85,11 @@ check_cat_usb() {
   else
     warn "No /dev/ttyUSB device found"
   fi
+}
+
+enable_cqrlog_remote_mode_wsjtx() {
+  cd "$PROJECT_ROOT"
+  PYTHONPATH=. SHACK_LOGFILE="$LOGFILE" python3 -m modules.platform enable-logger-remote-mode
 }
 
 show_operating_mode_menu() {
@@ -159,7 +165,8 @@ echo "================================="
 start_app "FLrig" "flrig" 3
 start_app "WSJT-X" "wsjtx" 5
 start_app "GridTracker" "/opt/GridTracker2/gridtracker2" 3
-start_app "CQRLOG" "cqrlog" 3
+start_app "CQRLOG" "cqrlog" 3 -x
+enable_cqrlog_remote_mode_wsjtx
 
 echo
 echo "================================="

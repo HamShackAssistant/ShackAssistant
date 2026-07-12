@@ -45,12 +45,68 @@ DX Cluster TCP ───┘
    - GridTracker (`/opt/GridTracker2/gridtracker2`)
    - CQRLOG (`cqrlog`)
 4. **Completion** — prints status and waits for Enter
+5. **CQRLOG integration** — calls `python3 -m modules.platform enable-logger-remote-mode`
 
 ### Design notes
 
 - Each app has a configurable startup wait (`sleep`) before verifying the process
 - Already-running apps are detected and skipped
 - Failures are reported to both console and log file
+- CQRLOG Remote Mode automation is delegated to the platform abstraction layer
+
+## Platform Abstraction Layer
+
+**Package:** `modules/platform/`
+
+Shack Assistant separates platform-independent orchestration from operating-system-specific automation. The core decides *what* to launch and *which integrations to enable*. Platform adapters decide *how* those actions are performed on each host.
+
+### Why it exists
+
+Linux startup currently relies on `wmctrl` and `xdotool` to enable CQRLOG **Remote Mode for WSJT-X** (`Ctrl+J`). That behavior is effective on Linux but must not become part of the portable core. A platform layer keeps future Windows support isolated behind a stable interface.
+
+### Interface
+
+`PlatformAdapter` in `modules/platform/base.py` defines:
+
+| Method | Purpose |
+|--------|---------|
+| `launch_application()` | Start external applications |
+| `find_window()` | Locate a window by title substring |
+| `activate_window()` | Bring a window to the foreground |
+| `send_keystroke()` | Send a keystroke to a window |
+| `enable_logger_remote_mode()` | Enable logger remote logging (CQRLOG today) |
+| `notify()` | Display a desktop notification |
+
+`get_platform()` selects the adapter using `sys.platform`.
+
+### Linux implementation
+
+**File:** `modules/platform/linux.py`
+
+- Uses `wmctrl` to list and activate windows
+- Uses `xdotool` to send `Ctrl+J` once to the CQRLOG main window
+- Matches window titles case-insensitively on the stable substring `CQRLOG for Linux`
+- Checks for `wmctrl` and `xdotool` before attempting automation
+- Invoked from `scripts/start-shack.sh` via:
+
+  ```bash
+  python3 -m modules.platform enable-logger-remote-mode
+  ```
+
+Application launch (`flrig`, `wsjtx`, etc.) remains in the Bash launcher for now. Notification delivery for watchlist alerts remains in `modules/station_watch/notifiers.py`.
+
+### Windows implementation
+
+**File:** `modules/platform/windows.py`
+
+Placeholder stubs only. Methods return safe no-op or manual-required results until Windows automation is designed.
+
+### Supported operating systems
+
+| OS | Status |
+|----|--------|
+| Linux | Implemented (`linux.py`) |
+| Windows | Placeholder (`windows.py`) |
 
 ## Station Watch (WSJT-X — Field Validated)
 

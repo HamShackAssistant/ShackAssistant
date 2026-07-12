@@ -194,7 +194,35 @@ python3 -m modules.station_watch.dxcluster_watcher --once --verbose
 
 ## CQRLOG Notes
 
-- Enable **Remote Mode for ADIF logger** for automatic WSJT-X QSO logging
+### Automatic Remote Mode for WSJT-X
+
+After CQRLOG launches, Shack Assistant attempts to enable **Remote Mode for WSJT-X** automatically:
+
+1. Wait up to 12 seconds for the CQRLOG main window (title contains `CQRLOG for Linux`, case-insensitive)
+2. Activate the window with `wmctrl`
+3. Send `Ctrl+J` once with `xdotool`
+
+On success, startup prints:
+
+```text
+CQRLOG Remote Mode for WSJT-X : Enabled
+```
+
+### Dependencies
+
+Automatic activation requires:
+
+- `wmctrl`
+- `xdotool`
+
+Implementation: `modules/platform/linux.py`, invoked by `scripts/start-shack.sh`.
+
+If either tool is missing, or the CQRLOG window is not found in time, startup continues with a warning. Enable Remote Mode for WSJT-X manually with **Ctrl+J** in the CQRLOG main window.
+
+`Ctrl+J` toggles Remote Mode for WSJT-X. The startup script sends it at most once per run.
+
+### Integration health
+
 - Do not rely on the red Offline indicator alone to judge WSJT-X integration health
 
 ## Resource Use

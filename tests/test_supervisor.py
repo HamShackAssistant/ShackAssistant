@@ -138,8 +138,9 @@ class SupervisorConfigTests(unittest.TestCase):
 
 class SupervisorCommandTests(unittest.TestCase):
     def test_wsjtx_child_command_uses_current_interpreter_and_script(self) -> None:
+        watchlist_path = Path("/tmp/watchlist.csv")
         command = build_wsjtx_command(
-            watchlist_path=Path("/tmp/watchlist.csv"),
+            watchlist_path=watchlist_path,
             child_verbose=False,
         )
 
@@ -147,7 +148,7 @@ class SupervisorCommandTests(unittest.TestCase):
         self.assertEqual(command[1], "-u")
         self.assertEqual(command[2], str(WSJTX_WATCHER_SCRIPT))
         self.assertIn("--watchlist", command)
-        self.assertEqual(command[-1], "/tmp/watchlist.csv")
+        self.assertEqual(command[-1], str(watchlist_path))
 
     def test_dxcluster_child_command_uses_module_entry_point(self) -> None:
         command = build_dxcluster_command(
@@ -375,6 +376,67 @@ class SupervisorProcessTests(unittest.TestCase):
 
         self.assertEqual(emitted, [prefix_output_line(PREFIX_WSJTX, "MATCH: VB7F")])
 
+    def test_stream_output_tolerates_closed_stream(self) -> None:
+        stream = io.BytesIO(b"MATCH: VB7F\n")
+        stream.close()
+        emitted: list[str] = []
+
+        stream_output(stream, PREFIX_WSJTX, emitted.append, threading.Event())
+
+        self.assertEqual(emitted, [])
+
+    def test_stream_output_tolerates_close_during_read(self) -> None:
+        class ClosingAfterFirstLine:
+            def __init__(self) -> None:
+                self._inner = io.BytesIO(b"MATCH: VB7F\nsecond\n")
+                self.closed = False
+
+            def readline(self) -> bytes:
+                if self.closed:
+                    raise ValueError("I/O operation on closed file.")
+                line = self._inner.readline()
+                if line.startswith(b"second"):
+                    self.close()
+                    raise ValueError("I/O operation on closed file.")
+                return line
+
+            def close(self) -> None:
+                self.closed = True
+                self._inner.close()
+
+        emitted: list[str] = []
+        stream_output(
+            ClosingAfterFirstLine(),
+            PREFIX_WSJTX,
+            emitted.append,
+            threading.Event(),
+        )
+
+        self.assertEqual(
+            emitted,
+            [prefix_output_line(PREFIX_WSJTX, "MATCH: VB7F")],
+        )
+
+    def test_stream_output_reraises_unrelated_valueerror(self) -> None:
+        class BadStream:
+            closed = False
+
+            def readline(self) -> bytes:
+                raise ValueError("unexpected decoder failure")
+
+            def close(self) -> None:
+                self.closed = True
+
+        with self.assertRaises(ValueError) as ctx:
+            stream_output(
+                BadStream(),
+                PREFIX_WSJTX,
+                lambda _line: None,
+                threading.Event(),
+            )
+
+        self.assertEqual(str(ctx.exception), "unexpected decoder failure")
+
     def test_one_child_exit_does_not_stop_other(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             wsjtx = MockProcess(exit_after_polls=2, exit_code=1)
@@ -514,6 +576,11 @@ class SupervisorLockTests(unittest.TestCase):
 
     def test_is_process_alive_handles_missing_pid(self) -> None:
         self.assertFalse(is_process_alive(999999))
+
+    def test_is_process_alive_detects_running_process(self) -> None:
+        self.assertTrue(is_process_alive(os.getpid()))
+        self.assertFalse(is_process_alive(0))
+        self.assertFalse(is_process_alive(-1))
 
 
 class SupervisorIntegrationTests(unittest.TestCase):

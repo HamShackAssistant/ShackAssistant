@@ -82,9 +82,39 @@ class ManagedSource:
     rate_limited: bool = False
 
 
+def _is_process_alive_windows(pid: int) -> bool:
+    # _winapi is the Windows standard-library process API used by subprocess.
+    import _winapi
+
+    # Not exported by _winapi; required to read STILL_ACTIVE vs. a leftover PID.
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+    try:
+        handle = _winapi.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION,
+            False,
+            pid,
+        )
+    except PermissionError:
+        # The process exists, but this user cannot query it.
+        return True
+    except OSError:
+        return False
+
+    try:
+        return _winapi.GetExitCodeProcess(handle) == _winapi.STILL_ACTIVE
+    except OSError:
+        return True
+    finally:
+        _winapi.CloseHandle(handle)
+
+
 def is_process_alive(pid: int) -> bool:
     if pid <= 0:
         return False
+
+    if os.name == "nt":
+        return _is_process_alive_windows(pid)
 
     try:
         os.kill(pid, 0)
@@ -186,8 +216,25 @@ def stream_output(
     emit: Callable[[str], None],
     stop_event: threading.Event,
 ) -> None:
+    def _closed_during_shutdown(exc: ValueError) -> bool:
+        if stop_event.is_set() or getattr(stream, "closed", False):
+            return True
+        message = str(exc).lower()
+        return "closed file" in message or "closed stream" in message
+
     try:
-        for raw_line in iter(stream.readline, b""):
+        while True:
+            try:
+                raw_line = stream.readline()
+            except ValueError as exc:
+                # Child pipes can be closed while this thread is still reading.
+                if _closed_during_shutdown(exc):
+                    break
+                raise
+
+            if not raw_line:
+                break
+
             if stop_event.is_set():
                 break
 
@@ -195,7 +242,10 @@ def stream_output(
             if line:
                 emit(prefix_output_line(prefix, line))
     finally:
-        stream.close()
+        try:
+            stream.close()
+        except ValueError:
+            pass
 
 
 def count_watchlist_stations(path: Path) -> int:

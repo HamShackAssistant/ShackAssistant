@@ -1,18 +1,75 @@
-"""Windows platform adapter (placeholder)."""
+"""Windows platform adapter."""
 
 from __future__ import annotations
 
-from typing import Optional
+import logging
+import os
+import shutil
+import subprocess
+from pathlib import Path
+from typing import Callable, Optional
 
 from .base import AutomationResult, PlatformAdapter
+from .windows_apps import discover_windows_application
 
 
 class WindowsPlatform(PlatformAdapter):
-    """Placeholder Windows implementation for future cross-platform support."""
+    """Windows application launch and desktop automation."""
+
+    def __init__(
+        self,
+        *,
+        popen_factory: Callable[..., subprocess.Popen] = subprocess.Popen,
+        which: Callable[[str], Optional[str]] = shutil.which,
+        discover: Callable[[str], Optional[Path]] | None = None,
+    ) -> None:
+        self._popen_factory = popen_factory
+        self._which = which
+        self._discover = discover or discover_windows_application
 
     @property
     def platform_name(self) -> str:
         return "windows"
+
+    def discover_application(self, name: str) -> Optional[Path]:
+        """Return the installed executable for a known application, if found."""
+        return self._discover(name)
+
+    def _resolve_executable(self, name: str, command: str) -> Optional[Path]:
+        command = (command or "").strip().strip('"')
+        if command:
+            candidate = Path(command).expanduser()
+            try:
+                if candidate.is_file():
+                    return candidate
+            except OSError:
+                pass
+
+            looks_like_path = candidate.suffix.lower() == ".exe" or any(
+                separator in command for separator in ("/", "\\")
+            )
+            if looks_like_path:
+                return None
+
+            found = self._which(command) or self._which(f"{command}.exe")
+            if found:
+                found_path = Path(found)
+                try:
+                    if found_path.is_file():
+                        return found_path
+                except OSError:
+                    pass
+
+        return self._discover(name)
+
+    def _creation_flags(self) -> int:
+        if os.name != "nt":
+            return 0
+
+        flags = 0
+        flags |= getattr(subprocess, "DETACHED_PROCESS", 0)
+        flags |= getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return flags
 
     def launch_application(
         self,
@@ -20,8 +77,30 @@ class WindowsPlatform(PlatformAdapter):
         command: str,
         wait_seconds: float,
     ) -> bool:
-        # Future Windows implementation.
-        return False
+        """Launch a Windows desktop application without waiting for it to exit."""
+        del wait_seconds
+
+        executable = self._resolve_executable(name, command)
+        if executable is None:
+            logging.debug("Could not find executable for %s (%s).", name, command)
+            return False
+
+        kwargs = {
+            "cwd": str(executable.parent),
+            "shell": False,
+            "close_fds": True,
+        }
+        creation_flags = self._creation_flags()
+        if creation_flags:
+            kwargs["creationflags"] = creation_flags
+
+        try:
+            self._popen_factory([str(executable)], **kwargs)
+        except OSError as exc:
+            logging.debug("Could not launch %s: %s", name, exc)
+            return False
+
+        return True
 
     def find_window(
         self,
